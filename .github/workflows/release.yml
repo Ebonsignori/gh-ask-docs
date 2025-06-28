@@ -29,6 +29,7 @@ permissions:
   contents: write
   id-token: write
   attestations: write
+  models: read
 
 jobs:
   analyze-release:
