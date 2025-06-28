@@ -1,7 +1,6 @@
 # Ask (GitHub) Docs CLI
 
 [![CI](https://github.com/Ebonsignori/gh-ask-docs/workflows/CI/badge.svg)](https://github.com/Ebonsignori/gh-ask-docs/actions)
-[![Go Report Card](https://goreportcard.com/badge/github.com/Ebonsignori/gh-ask-docs)](https://goreportcard.com/report/github.com/Ebonsignori/gh-ask-docs)
 
 A [CLI Extension](https://docs.github.com/en/github-cli/github-cli/using-github-cli-extensions) for the [GitHub CLI](https://cli.github.com/) that lets you ask an LLM questions about GitHub using the official GitHub documentation.
 

@@ -40,9 +40,6 @@ linters-settings:
   unparam:
     check-exported: false
 
-  unused:
-    check-exported: false
-
   gocritic:
     enabled-tags:
       - diagnostic
