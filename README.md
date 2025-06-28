@@ -63,13 +63,6 @@ gh ask-docs --no-stream "How do I add GitHub Copilot to my IDE?"
 
 ## Theme Detection
 
-By default, the tool automatically detects your terminal's color theme using multiple methods:
-
-1. **GitHub CLI theme** - Checks `GH_THEME` environment variable
-2. **Terminal background** - Analyzes `COLORFGBG` environment variable 
-3. **Terminal program** - Detects known terminals (Apple Terminal, iTerm2, VS Code, etc.)
-4. **Platform defaults** - Falls back to sensible OS-specific defaults
-
 You can override automatic detection with the `--theme` flag:
 
 ```bash
@@ -78,9 +71,6 @@ gh ask-docs --theme light "How do I fork a repository?"
 
 # Force dark theme  
 gh ask-docs --theme dark "What are GitHub Pages?"
-
-# Use automatic detection (default)
-gh ask-docs --theme auto "How do I create an issue?"
 ```
 
 ## Development
