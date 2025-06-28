@@ -61,18 +61,6 @@ gh ask-docs --no-stream "How do I add GitHub Copilot to my IDE?"
 | `--theme` | Color theme: `auto` (default), `light`, `dark` |
 | `--debug` | Show raw NDJSON from the API for troubleshooting |
 
-## Theme Detection
-
-You can override automatic detection with the `--theme` flag:
-
-```bash
-# Force light theme
-gh ask-docs --theme light "How do I fork a repository?"
-
-# Force dark theme  
-gh ask-docs --theme dark "What are GitHub Pages?"
-```
-
 ## Development
 
 Please see [development docs](./DEVELOPMENT.md).
