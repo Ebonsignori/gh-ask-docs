@@ -28,6 +28,15 @@ func TestFixIncompleteMarkdown(t *testing.T) {
 		{"horizontal rule unchanged", "Some text\n---", "Some text\n---"},
 		{"table incomplete row", "| Header1 | Header2 |\n|---------|---------|\n| Row1Col1", "| Header1 | Header2 |\n|---------|---------|\n| Row1Col1 | |"},
 		{"tilde emphasis", "This is ~tilde emphasis", "This is ~tilde emphasis~"},
+		{"image alt text unclosed", "Here is an image ![alt text", "Here is an image ![alt text]"},
+		{"image with url unclosed", "Image: ![alt](https://example.com/image.jpg", "Image: ![alt](https://example.com/image.jpg)"},
+		{"image alt and url both unclosed", "Image: ![unclosed alt text](https://example.com", "Image: ![unclosed alt text](https://example.com)"},
+		{"multiple images mixed", "![first image] and ![second unclosed", "![first image] and ![second unclosed]"},
+		{"image at start", "![unclosed image", "![unclosed image]"},
+		{"image at end", "Text before ![unclosed", "Text before ![unclosed]"},
+		{"empty image alt", "![](complete.jpg) and ![", "![](complete.jpg) and ![]"},
+		{"nested_image_syntax", "Text ![alt with [nested] brackets", "Text ![alt with [nested] brackets"},
+		{"image with complex url", "![alt](https://example.com/path?param=value&other=test", "![alt](https://example.com/path?param=value&other=test)"},
 	}
 
 	for _, c := range cases {
