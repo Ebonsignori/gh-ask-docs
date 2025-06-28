@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 )
 
@@ -123,13 +124,61 @@ func NormalizeVersion(v string) string {
 }
 
 func IsLight() bool {
+	// Try GH_THEME first (GitHub CLI sets this)
 	switch os.Getenv("GH_THEME") {
 	case "light":
 		return true
 	case "dark":
 		return false
 	}
-	return runtime.GOOS == "windows"
+
+	// Check COLORFGBG environment variable (set by some terminals)
+	// Format is usually "foreground;background" where light background is high numbers
+	if colorfgbg := os.Getenv("COLORFGBG"); colorfgbg != "" {
+		parts := strings.Split(colorfgbg, ";")
+		if len(parts) >= 2 {
+			if bg, err := strconv.Atoi(parts[len(parts)-1]); err == nil {
+				// Light backgrounds typically have high color numbers (7, 15, etc.)
+				return bg >= 7
+			}
+		}
+	}
+
+	// Check for known light terminal programs
+	termProgram := os.Getenv("TERM_PROGRAM")
+	switch termProgram {
+	case "Apple_Terminal":
+		// macOS Terminal defaults to light theme
+		return true
+	case "iTerm.app":
+		// iTerm2 - can't reliably detect, assume dark as it's more common
+		return false
+	case "vscode":
+		// VS Code integrated terminal - assume follows editor theme, default dark
+		return false
+	}
+
+	// Check if we're in a known IDE terminal that might be light
+	if os.Getenv("VSCODE_INJECTION") != "" || os.Getenv("TERM_PROGRAM") == "vscode" {
+		return false // VS Code defaults to dark
+	}
+
+	// Platform-specific defaults
+	switch runtime.GOOS {
+	case "windows":
+		// Windows terminal traditionally light, but newer Windows Terminal is dark
+		// Check if we're in newer Windows Terminal
+		if os.Getenv("WT_SESSION") != "" {
+			return false // Windows Terminal defaults to dark
+		}
+		return true // Traditional Windows console is light
+	case "darwin":
+		// macOS Terminal.app defaults to light, but most developers use dark
+		return false
+	default:
+		// Linux and others - most terminals default to dark
+		return false
+	}
 }
 
 func ExitCouldNotAnswer() {

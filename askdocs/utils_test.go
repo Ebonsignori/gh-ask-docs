@@ -215,26 +215,84 @@ func TestLoadSupportedVersionsWithTestData(t *testing.T) {
 }
 
 func TestIsLight(t *testing.T) {
-	// Save and defer restore original env
-	orig := os.Getenv("GH_THEME")
-	defer os.Setenv("GH_THEME", orig)
+	// Save and defer restore original env vars
+	origTheme := os.Getenv("GH_THEME")
+	origColorFGBG := os.Getenv("COLORFGBG")
+	origTermProgram := os.Getenv("TERM_PROGRAM")
+	origWTSession := os.Getenv("WT_SESSION")
+	defer func() {
+		os.Setenv("GH_THEME", origTheme)
+		os.Setenv("COLORFGBG", origColorFGBG)
+		os.Setenv("TERM_PROGRAM", origTermProgram)
+		os.Setenv("WT_SESSION", origWTSession)
+	}()
 
-	// Test explicit values
+	// Test GH_THEME explicit values
 	_ = os.Setenv("GH_THEME", "light")
+	_ = os.Unsetenv("COLORFGBG")
+	_ = os.Unsetenv("TERM_PROGRAM")
+	_ = os.Unsetenv("WT_SESSION")
 	if !IsLight() {
-		t.Errorf("isLight() should return true for GH_THEME=light")
+		t.Errorf("IsLight() should return true for GH_THEME=light")
 	}
 
 	_ = os.Setenv("GH_THEME", "dark")
 	if IsLight() {
-		t.Errorf("isLight() should return false for GH_THEME=dark")
+		t.Errorf("IsLight() should return false for GH_THEME=dark")
 	}
 
-	// Test fallback (simulate unset or other value)
+	// Test COLORFGBG detection
 	_ = os.Unsetenv("GH_THEME")
-	want := runtime.GOOS == "windows"
-	if got := IsLight(); got != want {
-		t.Errorf("isLight() fallback mismatch on %q: got %v, want %v", runtime.GOOS, got, want)
+	_ = os.Setenv("COLORFGBG", "0;15") // dark on light
+	if !IsLight() {
+		t.Errorf("IsLight() should return true for COLORFGBG=0;15 (light background)")
+	}
+
+	_ = os.Setenv("COLORFGBG", "15;0") // light on dark
+	if IsLight() {
+		t.Errorf("IsLight() should return false for COLORFGBG=15;0 (dark background)")
+	}
+
+	// Test terminal program detection
+	_ = os.Unsetenv("COLORFGBG")
+	_ = os.Setenv("TERM_PROGRAM", "Apple_Terminal")
+	if !IsLight() {
+		t.Errorf("IsLight() should return true for Apple_Terminal")
+	}
+
+	_ = os.Setenv("TERM_PROGRAM", "iTerm.app")
+	if IsLight() {
+		t.Errorf("IsLight() should return false for iTerm.app")
+	}
+
+	_ = os.Setenv("TERM_PROGRAM", "vscode")
+	if IsLight() {
+		t.Errorf("IsLight() should return false for vscode terminal")
+	}
+
+	// Test platform-specific defaults
+	_ = os.Unsetenv("TERM_PROGRAM")
+	if runtime.GOOS == "windows" {
+		// Test Windows Terminal detection
+		_ = os.Setenv("WT_SESSION", "some-session-id")
+		if IsLight() {
+			t.Errorf("IsLight() should return false for Windows Terminal")
+		}
+
+		// Test traditional Windows console
+		_ = os.Unsetenv("WT_SESSION")
+		if !IsLight() {
+			t.Errorf("IsLight() should return true for traditional Windows console")
+		}
+	} else if runtime.GOOS == "darwin" {
+		if IsLight() {
+			t.Errorf("IsLight() should return false for macOS default")
+		}
+	} else {
+		// Linux and others
+		if IsLight() {
+			t.Errorf("IsLight() should return false for Linux/Unix default")
+		}
 	}
 }
 

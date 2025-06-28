@@ -21,6 +21,16 @@ func NewRenderer(theme string, wrap int) *glamour.TermRenderer {
 	return r
 }
 
+// NewAutoRenderer returns a Glamour renderer that automatically detects the best theme
+func NewAutoRenderer(wrap int) *glamour.TermRenderer {
+	opts := []glamour.TermRendererOption{
+		glamour.WithAutoStyle(),
+		glamour.WithWordWrap(wrap),
+	}
+	r, _ := glamour.NewTermRenderer(opts...)
+	return r
+}
+
 // renderFrame renders the buffer plus a spinner, clearing the previous frame first.
 func RenderFrame(r *glamour.TermRenderer, raw string, spin rune, prevLines *int) {
 	safe := fixIncompleteMarkdown(raw)

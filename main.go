@@ -17,6 +17,7 @@
 //	--no-render   stream raw Markdown (default renders with Glamour)
 //	--no-stream   don't stream answer, only print only when complete (stdout-friendly)
 //	--wrap        word-wrap width when rendering (0 = no wrap)
+//	--theme       color theme: auto (default), light, dark
 //	--debug       show raw NDJSON from the API
 //
 // Notes:
@@ -41,6 +42,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/charmbracelet/glamour"
+
 	"github.com/Ebonsignori/gh-ask-docs/askdocs"
 )
 
@@ -57,6 +60,7 @@ func main() {
 	raw := fs.Bool("no-render", false, "stream raw Markdown without Glamour")
 	noStream := fs.Bool("no-stream", false, "Don't stream answer, print only when complete")
 	wrapWidth := fs.Int("wrap", 0, "word-wrap width for rendered output (0 = no wrap)")
+	themeFlag := fs.String("theme", "auto", "color theme: auto, light, dark")
 	debug := fs.Bool("debug", false, "print raw NDJSON for troubleshooting")
 	listVersions := fs.Bool("list-versions", false, "list supported enterprise server versions")
 
@@ -129,12 +133,31 @@ func main() {
 	//----------------------------------------------------------------------
 	// Renderers
 	//----------------------------------------------------------------------
-	theme := "dark"
-	if askdocs.IsLight() {
-		theme = "light"
+	var answerR, noWrapR *glamour.TermRenderer
+
+	switch *themeFlag {
+	case "auto":
+		// Try auto-detection first, fall back to manual detection if needed
+		answerR = askdocs.NewAutoRenderer(*wrapWidth)
+		noWrapR = askdocs.NewAutoRenderer(0)
+
+		// If auto-detection fails, fall back to our improved theme detection
+		if answerR == nil {
+			theme := "dark"
+			if askdocs.IsLight() {
+				theme = "light"
+			}
+			answerR = askdocs.NewRenderer(theme, *wrapWidth)
+			noWrapR = askdocs.NewRenderer(theme, 0)
+		}
+	case "light", "dark":
+		// User explicitly specified theme
+		answerR = askdocs.NewRenderer(*themeFlag, *wrapWidth)
+		noWrapR = askdocs.NewRenderer(*themeFlag, 0)
+	default:
+		fmt.Fprintf(os.Stderr, "Invalid theme '%s'. Use 'auto', 'light', or 'dark'.\n", *themeFlag)
+		os.Exit(1)
 	}
-	answerR := askdocs.NewRenderer(theme, *wrapWidth)
-	noWrapR := askdocs.NewRenderer(theme, 0)
 
 	reader := bufio.NewReader(resp.Body)
 
