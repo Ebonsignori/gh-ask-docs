@@ -16,6 +16,14 @@ Install this extension using the GitHub CLI:
 gh extension install ebonsignori/gh-ask-docs
 ```
 
+### Prerequisites
+
+You'll need the [GitHub CLI](https://cli.github.com/) installed first:
+- macOS: `brew install gh`
+- Windows: `winget install GitHub.cli`
+- Linux: See [installation instructions](https://github.com/cli/cli#installation)
+
+
 ## Usage
 
 ```bash
