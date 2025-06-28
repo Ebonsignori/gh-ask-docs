@@ -438,7 +438,6 @@ Return only the release notes content, no JSON or other formatting.`;
           { role: "user", content: prompt },
         ],
         model: modelName,
-        temperature: 0.3,
       });
 
       return response.choices[0].message.content.trim();
