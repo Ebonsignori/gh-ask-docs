@@ -114,6 +114,16 @@ jobs:
             fi
 
             NEW_VERSION=$(cat release-analysis.json | jq -r '.new_version')
+            VERSION_BUMP=$(cat release-analysis.json | jq -r '.version_bump')
+            RELEASE_NOTES=$(cat release-analysis.json | jq -r '.release_notes')
+
+            # Set outputs that are always available
+            echo "new-version=${NEW_VERSION}" >> $GITHUB_OUTPUT
+            echo "version-bump=${VERSION_BUMP}" >> $GITHUB_OUTPUT
+            echo "release-notes<<EOF" >> $GITHUB_OUTPUT
+            echo "${RELEASE_NOTES}" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+
             if [[ "$NEW_VERSION" != "null" && "$NEW_VERSION" != "" ]]; then
               echo "✅ Release recommended: version $NEW_VERSION"
               echo "should-release=true" >> $GITHUB_OUTPUT
