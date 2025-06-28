@@ -184,11 +184,10 @@ jobs:
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEW_VERSION: ${{ needs.analyze-release.outputs.new-version }}
+          VERSION_BUMP: ${{ needs.analyze-release.outputs.version-bump }}
+          RELEASE_NOTES: ${{ needs.analyze-release.outputs.release-notes }}
         run: |
-          NEW_VERSION="${{ needs.analyze-release.outputs.new-version }}"
-          VERSION_BUMP="${{ needs.analyze-release.outputs.version-bump }}"
-          RELEASE_NOTES="${{ needs.analyze-release.outputs.release-notes }}"
-
           # Validate inputs
           if [[ -z "$NEW_VERSION" || -z "$VERSION_BUMP" || -z "$RELEASE_NOTES" ]]; then
             echo "❌ Missing required release information"
@@ -198,15 +197,15 @@ jobs:
             exit 1
           fi
 
-          echo "🚀 Creating GitHub Release v${NEW_VERSION}"
+          echo "🚀 Updating GitHub Release v${NEW_VERSION}"
 
-          # Create release with AI-generated notes
-          if gh release create "v${NEW_VERSION}" \
+          # Update the existing release created by gh-extension-precompile with AI-generated notes
+          if gh release edit "v${NEW_VERSION}" \
             --title "Release v${NEW_VERSION} (${VERSION_BUMP})" \
-            --notes "${RELEASE_NOTES}" \
+            --notes "$RELEASE_NOTES" \
             --latest; then
-            echo "✅ Release v${NEW_VERSION} created successfully"
+            echo "✅ Release v${NEW_VERSION} updated successfully"
           else
-            echo "❌ Failed to create release"
+            echo "❌ Failed to update release"
             exit 1
           fi
