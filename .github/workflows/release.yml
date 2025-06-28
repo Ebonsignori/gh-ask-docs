@@ -18,12 +18,6 @@ on:
   push:
     tags:
       - "v*"
-    branches:
-      - main
-    paths-ignore:
-      - "**.md"
-      - ".gitignore"
-      - "LICENSE"
 
 permissions:
   contents: write
