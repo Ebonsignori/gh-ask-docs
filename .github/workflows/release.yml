@@ -79,19 +79,15 @@ jobs:
           # Check if this is a manual dispatch with forced version/bump
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             if [[ -n "${{ github.event.inputs.force_version }}" ]]; then
+              echo "🔧 Manual release with forced version: ${{ github.event.inputs.force_version }}"
+              export FORCE_VERSION="${{ github.event.inputs.force_version }}"
+              npm run analyze-release
               echo "should-release=true" >> $GITHUB_OUTPUT
-              echo "new-version=${{ github.event.inputs.force_version }}" >> $GITHUB_OUTPUT
-              echo "version-bump=manual" >> $GITHUB_OUTPUT
-              echo "release-notes<<EOF" >> $GITHUB_OUTPUT
-              echo "## Release v${{ github.event.inputs.force_version }}" >> $GITHUB_OUTPUT
-              echo "" >> $GITHUB_OUTPUT
-              echo "Manual release triggered with version ${{ github.event.inputs.force_version }}." >> $GITHUB_OUTPUT
-              echo "EOF" >> $GITHUB_OUTPUT
               exit 0
             elif [[ -n "${{ github.event.inputs.force_bump }}" ]]; then
-              # Get current version for forced bump calculation
-              CURRENT_VERSION=$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || echo "0.0.0")
-              node manual-release.js "${{ github.event.inputs.force_bump }}" "$CURRENT_VERSION"
+              echo "🔧 Manual release with forced bump: ${{ github.event.inputs.force_bump }}"
+              export FORCE_BUMP="${{ github.event.inputs.force_bump }}"
+              npm run analyze-release
               echo "should-release=true" >> $GITHUB_OUTPUT
               exit 0
             fi
