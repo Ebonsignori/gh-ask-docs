@@ -34,12 +34,12 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/glamour"
@@ -49,34 +49,97 @@ import (
 
 const endpoint = "https://docs.github.com/api/ai-search/v1"
 
+// parseArgs manually parses command line arguments to allow flags anywhere
+func parseArgs(args []string) (query string, version string, showSources bool, raw bool, noStream bool, wrapWidth int, theme string, debug bool, listVersions bool, showHelp bool) {
+	// Set defaults
+	version = "free-pro-team"
+	theme = "auto"
+
+	var queryParts []string
+
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+
+		switch {
+		case arg == "--help" || arg == "-h":
+			showHelp = true
+		case arg == "--version":
+			if i+1 < len(args) && !strings.HasPrefix(args[i+1], "-") {
+				i++
+				version = args[i]
+			}
+		case strings.HasPrefix(arg, "--version="):
+			version = strings.TrimPrefix(arg, "--version=")
+		case arg == "--sources":
+			showSources = true
+		case arg == "--no-render":
+			raw = true
+		case arg == "--no-stream":
+			noStream = true
+		case arg == "--wrap":
+			if i+1 < len(args) && !strings.HasPrefix(args[i+1], "-") {
+				i++
+				if w, err := strconv.Atoi(args[i]); err == nil {
+					wrapWidth = w
+				}
+			}
+		case strings.HasPrefix(arg, "--wrap="):
+			if w, err := strconv.Atoi(strings.TrimPrefix(arg, "--wrap=")); err == nil {
+				wrapWidth = w
+			}
+		case arg == "--theme":
+			if i+1 < len(args) && !strings.HasPrefix(args[i+1], "-") {
+				i++
+				theme = args[i]
+			}
+		case strings.HasPrefix(arg, "--theme="):
+			theme = strings.TrimPrefix(arg, "--theme=")
+		case arg == "--debug":
+			debug = true
+		case arg == "--list-versions":
+			listVersions = true
+		case strings.HasPrefix(arg, "-"):
+			// Unknown flag, ignore for now
+		default:
+			// This is part of the query
+			queryParts = append(queryParts, arg)
+		}
+	}
+
+	query = strings.Join(queryParts, " ")
+	return
+}
+
+func printUsage() {
+	bin := filepath.Base(os.Args[0])
+	if strings.HasPrefix(bin, "gh-") {
+		bin = "gh " + strings.TrimPrefix(bin, "gh-")
+	}
+	fmt.Fprintf(os.Stderr, "usage: %s [flags] <query>\n\n", bin)
+	fmt.Fprintf(os.Stderr, "Flags:\n")
+	fmt.Fprintf(os.Stderr, "  --version string     docs version (default \"free-pro-team\")\n")
+	fmt.Fprintf(os.Stderr, "  --sources           show reference links after answer\n")
+	fmt.Fprintf(os.Stderr, "  --no-render         stream raw Markdown without Glamour\n")
+	fmt.Fprintf(os.Stderr, "  --no-stream         Don't stream answer, print only when complete\n")
+	fmt.Fprintf(os.Stderr, "  --wrap int          word-wrap width for rendered output (0 = no wrap)\n")
+	fmt.Fprintf(os.Stderr, "  --theme string      color theme: auto, light, dark (default \"auto\")\n")
+	fmt.Fprintf(os.Stderr, "  --debug             print raw NDJSON for troubleshooting\n")
+	fmt.Fprintf(os.Stderr, "  --list-versions     list supported enterprise server versions\n")
+	fmt.Fprintf(os.Stderr, "  --help, -h          show this help message\n")
+}
+
 func main() {
 	//----------------------------------------------------------------------
-	// Flags
+	// Parse arguments manually to allow flags anywhere
 	//----------------------------------------------------------------------
-	fs := flag.NewFlagSet("ai-search", flag.ExitOnError)
+	query, version, showSources, raw, noStream, wrapWidth, theme, debug, listVersions, showHelp := parseArgs(os.Args[1:])
 
-	versionFlag := fs.String("version", "free-pro-team", "docs version")
-	showSources := fs.Bool("sources", false, "show reference links after answer")
-	raw := fs.Bool("no-render", false, "stream raw Markdown without Glamour")
-	noStream := fs.Bool("no-stream", false, "Don't stream answer, print only when complete")
-	wrapWidth := fs.Int("wrap", 0, "word-wrap width for rendered output (0 = no wrap)")
-	themeFlag := fs.String("theme", "auto", "color theme: auto, light, dark")
-	debug := fs.Bool("debug", false, "print raw NDJSON for troubleshooting")
-	listVersions := fs.Bool("list-versions", false, "list supported enterprise server versions")
-
-	fs.Usage = func() {
-		bin := filepath.Base(os.Args[0])
-		if strings.HasPrefix(bin, "gh-") {
-			bin = "gh " + strings.TrimPrefix(bin, "gh-")
-		}
-		fmt.Fprintf(os.Stderr, "usage: %s [flags] <query>\n\n", bin)
-		fs.PrintDefaults()
+	if showHelp {
+		printUsage()
+		os.Exit(0)
 	}
 
-	if err := fs.Parse(os.Args[1:]); err != nil {
-		askdocs.Fatal(err)
-	}
-	if *listVersions {
+	if listVersions {
 		versions, err := askdocs.LoadSupportedVersions()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error loading supported versions: %v\n", err)
@@ -85,11 +148,11 @@ func main() {
 		}
 
 		fmt.Println("Supported GitHub Enterprise Server versions:")
-		for _, version := range versions.SupportedVersions {
-			if version == versions.LatestVersion {
-				fmt.Printf("  %s (latest)\n", version)
+		for _, v := range versions.SupportedVersions {
+			if v == versions.LatestVersion {
+				fmt.Printf("  %s (latest)\n", v)
 			} else {
-				fmt.Printf("  %s\n", version)
+				fmt.Printf("  %s\n", v)
 			}
 		}
 		fmt.Printf("\nLast updated: %s\n", versions.LastUpdated)
@@ -97,13 +160,12 @@ func main() {
 		os.Exit(0)
 	}
 
-	if fs.NArg() == 0 {
-		fs.Usage()
+	if query == "" {
+		printUsage()
 		os.Exit(1)
 	}
 
-	query := strings.Join(fs.Args(), " ")
-	version := askdocs.NormalizeVersion(*versionFlag)
+	version = askdocs.NormalizeVersion(version)
 
 	//----------------------------------------------------------------------
 	// HTTP Request
@@ -135,27 +197,27 @@ func main() {
 	//----------------------------------------------------------------------
 	var answerR, noWrapR *glamour.TermRenderer
 
-	switch *themeFlag {
+	switch theme {
 	case "auto":
 		// Try auto-detection first, fall back to manual detection if needed
-		answerR = askdocs.NewAutoRenderer(*wrapWidth)
+		answerR = askdocs.NewAutoRenderer(wrapWidth)
 		noWrapR = askdocs.NewAutoRenderer(0)
 
 		// If auto-detection fails, fall back to our improved theme detection
 		if answerR == nil {
-			theme := "dark"
+			themeDetected := "dark"
 			if askdocs.IsLight() {
-				theme = "light"
+				themeDetected = "light"
 			}
-			answerR = askdocs.NewRenderer(theme, *wrapWidth)
-			noWrapR = askdocs.NewRenderer(theme, 0)
+			answerR = askdocs.NewRenderer(themeDetected, wrapWidth)
+			noWrapR = askdocs.NewRenderer(themeDetected, 0)
 		}
 	case "light", "dark":
 		// User explicitly specified theme
-		answerR = askdocs.NewRenderer(*themeFlag, *wrapWidth)
-		noWrapR = askdocs.NewRenderer(*themeFlag, 0)
+		answerR = askdocs.NewRenderer(theme, wrapWidth)
+		noWrapR = askdocs.NewRenderer(theme, 0)
 	default:
-		fmt.Fprintf(os.Stderr, "Invalid theme '%s'. Use 'auto', 'light', or 'dark'.\n", *themeFlag)
+		fmt.Fprintf(os.Stderr, "Invalid theme '%s'. Use 'auto', 'light', or 'dark'.\n", theme)
 		os.Exit(1)
 	}
 
@@ -180,7 +242,7 @@ func main() {
 		}
 		trimmed := bytes.TrimSpace(line)
 		if len(trimmed) > 0 {
-			if *debug {
+			if debug {
 				fmt.Fprintf(os.Stderr, "%s\n", trimmed)
 			}
 			var jl askdocs.GenericLine
@@ -188,7 +250,7 @@ func main() {
 				switch jl.ChunkType {
 				case askdocs.ChunkMessage:
 					buf.WriteString(jl.Text)
-					if *raw && !*noStream {
+					if raw && !noStream {
 						fmt.Print(jl.Text)
 					}
 
@@ -212,13 +274,13 @@ func main() {
 		//--------------------------------------------------------------
 		// Frame / Spinner
 		//--------------------------------------------------------------
-		if *noStream {
+		if noStream {
 			askdocs.RenderSpinner(askdocs.SpinnerFrames[spinIdx%len(askdocs.SpinnerFrames)])
 			spinIdx++
 			continue
 		}
 
-		if !*raw {
+		if !raw {
 			askdocs.RenderFrame(answerR, buf.String(), askdocs.SpinnerFrames[spinIdx%len(askdocs.SpinnerFrames)], &prevLines)
 			spinIdx++
 		}
@@ -231,9 +293,9 @@ func main() {
 	//----------------------------------------------------------------------
 	// Clear spinner / final repaint
 	//----------------------------------------------------------------------
-	if *noStream {
+	if noStream {
 		fmt.Fprint(os.Stderr, "\r \r")
-	} else if !*raw {
+	} else if !raw {
 		askdocs.RenderFrame(answerR, buf.String(), ' ', &prevLines)
 		fmt.Println()
 	}
@@ -241,8 +303,8 @@ func main() {
 	//----------------------------------------------------------------------
 	// Output buffered answer (no-stream mode)
 	//----------------------------------------------------------------------
-	if *noStream {
-		if *raw {
+	if noStream {
+		if raw {
 			fmt.Print(buf.String())
 		} else {
 			out, _ := answerR.Render(buf.String())
@@ -254,8 +316,8 @@ func main() {
 	//----------------------------------------------------------------------
 	// Sources
 	//----------------------------------------------------------------------
-	if *showSources && len(order) > 0 {
-		if *raw {
+	if showSources && len(order) > 0 {
+		if raw {
 			fmt.Println("\nSources:")
 			for _, u := range order {
 				s := seen[u]
