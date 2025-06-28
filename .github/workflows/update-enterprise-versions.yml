@@ -34,12 +34,16 @@ jobs:
           const now = new Date();
           const supportedVersions = [];
 
-          // Process each version
+          // Process each version to determine which are currently supported
           Object.entries(data).forEach(([version, dates]) => {
+            const releaseDate = new Date(dates.releaseDate);
             const deprecationDate = new Date(dates.deprecationDate);
 
-            // Version is supported if deprecation date is in the future
-            if (deprecationDate > now) {
+            // A version is considered supported if:
+            // 1. It has already been released (releaseDate <= now)
+            // 2. It has not yet been deprecated (deprecationDate > now)
+            // This prevents including future unreleased versions
+            if (releaseDate <= now && deprecationDate > now) {
               supportedVersions.push(version);
             }
           });
