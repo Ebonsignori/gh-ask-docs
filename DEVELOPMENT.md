@@ -56,3 +56,5 @@ go test -race -coverprofile=coverage.out -covermode=atomic ./...
 ```
 
 ### Releasing
+
+Releasing is automated using an LLM. Simply merge your changes to `main` and it will determine if the changes are `major`, `minor`, or `patch`. It will generate release notes.
