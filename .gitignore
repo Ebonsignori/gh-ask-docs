@@ -44,3 +44,9 @@ build/
 # Temporary files
 *.tmp
 *.temp
+
+# Script dependencies and outputs
+scripts/node_modules/
+scripts/package-lock.json
+scripts/release-analysis.json
+scripts/.env
