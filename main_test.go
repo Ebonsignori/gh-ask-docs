@@ -104,7 +104,7 @@ func TestFlagParsing(t *testing.T) {
 			os.Stderr = oldStderr
 
 			var buf bytes.Buffer
-			io.Copy(&buf, r)
+			_, _ = io.Copy(&buf, r)
 
 			if tt.wantExit {
 				if err == nil && len(tt.args) > 0 && tt.args[0] != "-h" {
@@ -122,7 +122,8 @@ func TestFlagParsing(t *testing.T) {
 				if err == nil {
 					// Test default values
 					if *versionFlag != "free-pro-team" && len(tt.args) < 2 {
-						// Default value check
+						// Default value check - this is intentionally empty for now
+						_ = *versionFlag
 					}
 
 					// Test that boolean flags work
@@ -284,7 +285,7 @@ func TestNDJSONResponseParsing(t *testing.T) {
 						// Verify sources can be parsed
 						if len(jl.Sources) > 0 {
 							var sources []askdocs.Source
-							json.Unmarshal(jl.Sources, &sources)
+							_ = json.Unmarshal(jl.Sources, &sources)
 						}
 					}
 				}
@@ -399,7 +400,7 @@ func TestMockHTTPServer(t *testing.T) {
 		// Read and verify payload
 		body, _ := io.ReadAll(r.Body)
 		var payload map[string]string
-		json.Unmarshal(body, &payload)
+		_ = json.Unmarshal(body, &payload)
 
 		if payload["language"] != "en" {
 			t.Errorf("Expected language 'en', got %s", payload["language"])
@@ -417,7 +418,7 @@ func TestMockHTTPServer(t *testing.T) {
 		}
 
 		for _, resp := range responses {
-			w.Write([]byte(resp + "\n"))
+			_, _ = w.Write([]byte(resp + "\n"))
 			if f, ok := w.(http.Flusher); ok {
 				f.Flush()
 			}
@@ -458,7 +459,7 @@ func TestMockHTTPServer(t *testing.T) {
 
 	// Verify first line is conversation ID
 	var firstLine askdocs.GenericLine
-	json.Unmarshal([]byte(lines[0]), &firstLine)
+	_ = json.Unmarshal([]byte(lines[0]), &firstLine)
 	if firstLine.ChunkType != askdocs.ChunkConversationID {
 		t.Errorf("First line should be CONVERSATION_ID, got %s", firstLine.ChunkType)
 	}

@@ -93,11 +93,13 @@ func TestNormalizeVersionEdgeCases(t *testing.T) {
 func TestNormalizeVersionWithLoadError(t *testing.T) {
 	// Save original working directory
 	origWd, _ := os.Getwd()
-	defer os.Chdir(origWd)
+	defer func() {
+		_ = os.Chdir(origWd)
+	}()
 
 	// Change to a directory without data file to test fallback behavior
 	tmpDir := t.TempDir()
-	os.Chdir(tmpDir)
+	_ = os.Chdir(tmpDir)
 
 	// Test with unsupported version when LoadSupportedVersions fails
 	result := NormalizeVersion("enterprise-server@999.0")
@@ -127,11 +129,13 @@ func TestIsVersionSupported(t *testing.T) {
 func TestIsVersionSupportedWithFallback(t *testing.T) {
 	// Save original working directory
 	origWd, _ := os.Getwd()
-	defer os.Chdir(origWd)
+	defer func() {
+		_ = os.Chdir(origWd)
+	}()
 
 	// Change to a directory without data file to test fallback
 	tmpDir := t.TempDir()
-	os.Chdir(tmpDir)
+	_ = os.Chdir(tmpDir)
 
 	// Test hardcoded fallback versions
 	hardcodedVersions := []string{"3.11", "3.12", "3.13", "3.14", "3.15", "3.16", "3.17"}
@@ -181,14 +185,16 @@ func TestLoadSupportedVersionsWithTestData(t *testing.T) {
 
 	// Save and restore original working directory
 	origWd, _ := os.Getwd()
-	defer os.Chdir(origWd)
+	defer func() {
+		_ = os.Chdir(origWd)
+	}()
 
 	// Change to temp directory so relative path works
-	os.Chdir(tmpDir)
+	_ = os.Chdir(tmpDir)
 
 	// Create data directory structure
-	os.Mkdir("data", 0755)
-	os.Rename("supported-versions.json", "data/supported-versions.json")
+	_ = os.Mkdir("data", 0755)
+	_ = os.Rename("supported-versions.json", "data/supported-versions.json")
 
 	versions, err := LoadSupportedVersions()
 	if err != nil {

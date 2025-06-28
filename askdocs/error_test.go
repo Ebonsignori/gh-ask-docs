@@ -101,12 +101,15 @@ func TestFixImagesEdgeCases(t *testing.T) {
 
 func TestLoadSupportedVersionsFileNotFound(t *testing.T) {
 	// Save current working directory
+	// Save original working directory
 	origWd, _ := os.Getwd()
-	defer os.Chdir(origWd)
+	defer func() {
+		_ = os.Chdir(origWd)
+	}()
 
 	// Create temporary directory without data file
 	tmpDir := t.TempDir()
-	os.Chdir(tmpDir)
+	_ = os.Chdir(tmpDir)
 
 	_, err := LoadSupportedVersions()
 	if err == nil {
@@ -121,14 +124,16 @@ func TestLoadSupportedVersionsFileNotFound(t *testing.T) {
 func TestLoadSupportedVersionsInvalidJSON(t *testing.T) {
 	// Save current working directory
 	origWd, _ := os.Getwd()
-	defer os.Chdir(origWd)
+	defer func() {
+		_ = os.Chdir(origWd)
+	}()
 
 	// Create temporary directory with invalid JSON file
 	tmpDir := t.TempDir()
-	os.Chdir(tmpDir)
+	_ = os.Chdir(tmpDir)
 
 	// Create data directory and invalid JSON file
-	os.Mkdir("data", 0755)
+	_ = os.Mkdir("data", 0755)
 	invalidJSON := `{"lastUpdated": "invalid json`
 	err := os.WriteFile("data/supported-versions.json", []byte(invalidJSON), 0644)
 	if err != nil {

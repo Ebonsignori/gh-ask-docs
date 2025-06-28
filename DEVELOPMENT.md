@@ -54,3 +54,9 @@ go test -v ./...
 # Run tests with race detection and coverage
 go test -race -coverprofile=coverage.out -covermode=atomic ./...
 ```
+
+### Releasing
+
+Use Make, e.g.
+
+`make tag TAG=v1.0.0`

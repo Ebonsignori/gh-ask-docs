@@ -3,13 +3,18 @@ on:
   push:
     tags:
       - "v*"
+
 permissions:
   contents: write
   id-token: write
   attestations: write
 
 jobs:
+  test-and-lint:
+    uses: Ebonsignori/gh-ask-docs/.github/workflows/test-and-lint.yml@main
+
   release:
+    needs: test-and-lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
