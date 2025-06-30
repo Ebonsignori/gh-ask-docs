@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   update-versions:
@@ -94,14 +95,38 @@ jobs:
             echo "changed=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Commit and push changes
+      - name: Create Pull Request
+        if: steps.check-changes.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "Update supported enterprise versions"
+          title: "Update supported enterprise versions"
+          body: |
+            This PR updates the supported GitHub Enterprise Server versions based on the latest release information.
+            
+            The workflow automatically:
+            - Fetches the latest enterprise dates from GitHub's docs repository
+            - Determines which versions are currently supported (released but not deprecated)
+            - Updates the `data/supported-versions.json` file with the current information
+            
+            This PR is automatically created and will be auto-merged if all status checks pass.
+          branch: update-enterprise-versions
+          delete-branch: true
+          
+      - name: Enable auto-merge
         if: steps.check-changes.outputs.changed == 'true'
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add data/supported-versions.json
-          git commit -m "Update supported enterprise versions"
-          git push
+          # Get the PR number from the create-pull-request action
+          PR_NUMBER=$(gh pr list --head update-enterprise-versions --json number --jq '.[0].number')
+          if [ -n "$PR_NUMBER" ]; then
+            echo "Enabling auto-merge for PR #$PR_NUMBER"
+            gh pr merge $PR_NUMBER --auto --squash
+          else
+            echo "No PR found to enable auto-merge"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Clean up temporary files
         run: |
