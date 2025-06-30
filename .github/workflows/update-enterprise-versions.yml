@@ -97,34 +97,53 @@ jobs:
 
       - name: Create Pull Request
         if: steps.check-changes.outputs.changed == 'true'
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "Update supported enterprise versions"
-          title: "Update supported enterprise versions"
-          body: |
-            This PR updates the supported GitHub Enterprise Server versions based on the latest release information.
-            
-            The workflow automatically:
-            - Fetches the latest enterprise dates from GitHub's docs repository
-            - Determines which versions are currently supported (released but not deprecated)
-            - Updates the `data/supported-versions.json` file with the current information
-            
-            This PR is automatically created and will be auto-merged if all status checks pass.
-          branch: update-enterprise-versions
-          delete-branch: true
-          
-      - name: Enable auto-merge
-        if: steps.check-changes.outputs.changed == 'true'
+        id: create-pr
         run: |
-          # Get the PR number from the create-pull-request action
-          PR_NUMBER=$(gh pr list --head update-enterprise-versions --json number --jq '.[0].number')
-          if [ -n "$PR_NUMBER" ]; then
-            echo "Enabling auto-merge for PR #$PR_NUMBER"
-            gh pr merge $PR_NUMBER --auto --squash
-          else
-            echo "No PR found to enable auto-merge"
-          fi
+          # Configure git
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          # Create a new branch
+          BRANCH_NAME="update-enterprise-versions-$(date +%Y%m%d-%H%M%S)"
+          git checkout -b "$BRANCH_NAME"
+          
+          # Add and commit changes
+          git add data/supported-versions.json
+          git commit -m "Update supported enterprise versions"
+          
+          # Push the branch
+          git push origin "$BRANCH_NAME"
+          
+          # Create pull request using GitHub CLI
+          PR_URL=$(gh pr create \
+            --title "Update supported enterprise versions" \
+            --body "This PR updates the supported GitHub Enterprise Server versions based on the latest release information.
+
+          The workflow automatically:
+          - Fetches the latest enterprise dates from GitHub's docs repository
+          - Determines which versions are currently supported (released but not deprecated)
+          - Updates the data/supported-versions.json file with the current information
+
+          This PR is automatically created and will be auto-merged if all status checks pass." \
+            --head "$BRANCH_NAME" \
+            --base main)
+          
+          # Extract PR number from URL
+          PR_NUMBER=$(echo "$PR_URL" | grep -o '[0-9]\+$')
+          echo "pr-number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          echo "branch-name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+          echo "Created PR #$PR_NUMBER: $PR_URL"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Enable auto-merge
+        if: steps.check-changes.outputs.changed == 'true' && steps.create-pr.outputs.pr-number
+        run: |
+          echo "Enabling auto-merge for PR #${{ steps.create-pr.outputs.pr-number }}"
+          gh pr merge ${{ steps.create-pr.outputs.pr-number }} --auto --squash
+          
+          # Clean up the branch after auto-merge is enabled
+          echo "Auto-merge enabled. Branch ${{ steps.create-pr.outputs.branch-name }} will be deleted automatically after merge."
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
