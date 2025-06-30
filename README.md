@@ -1,6 +1,6 @@
 # Ask (GitHub) Docs CLI
 
-[![CI](https://github.com/Ebonsignori/gh-ask-docs/workflows/CI/badge.svg)](https://github.com/Ebonsignori/gh-ask-docs/actions)
+[![Test and Lint](https://github.com/Ebonsignori/gh-ask-docs/actions/workflows/test-and-lint.yml/badge.svg)](https://github.com/Ebonsignori/gh-ask-docs/actions/workflows/test-and-lint.yml)
 
 A [CLI Extension](https://docs.github.com/en/github-cli/github-cli/using-github-cli-extensions) for the [GitHub CLI](https://cli.github.com/) that lets you ask an LLM questions about GitHub using the official GitHub documentation.
 
@@ -15,6 +15,14 @@ Install this extension using the GitHub CLI:
 ```bash
 gh extension install ebonsignori/gh-ask-docs
 ```
+
+### Prerequisites
+
+You'll need the [GitHub CLI](https://cli.github.com/) installed first:
+- macOS: `brew install gh`
+- Windows: `winget install GitHub.cli`
+- Linux: See [installation instructions](https://github.com/cli/cli#installation)
+
 
 ## Usage
 
@@ -60,18 +68,6 @@ gh ask-docs --no-stream "How do I add GitHub Copilot to my IDE?"
 | `--wrap` | Word-wrap width when rendering (0 = no wrap) |
 | `--theme` | Color theme: `auto` (default), `light`, `dark` |
 | `--debug` | Show raw NDJSON from the API for troubleshooting |
-
-## Theme Detection
-
-You can override automatic detection with the `--theme` flag:
-
-```bash
-# Force light theme
-gh ask-docs --theme light "How do I fork a repository?"
-
-# Force dark theme  
-gh ask-docs --theme dark "What are GitHub Pages?"
-```
 
 ## Development
 
