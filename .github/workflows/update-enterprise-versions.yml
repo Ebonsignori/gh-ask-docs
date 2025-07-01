@@ -64,9 +64,27 @@ jobs:
             return aVer.minor - bVer.minor;
           });
 
+          // Read existing file if it exists to preserve lastUpdated when versions haven't changed
+          let existingData = null;
+          if (fs.existsSync('data/supported-versions.json')) {
+            try {
+              existingData = JSON.parse(fs.readFileSync('data/supported-versions.json', 'utf8'));
+            } catch (e) {
+              console.log('Could not parse existing file, will create new one');
+            }
+          }
+
+          // Check if versions have actually changed
+          const versionsChanged = !existingData || 
+            JSON.stringify(existingData.supportedVersions) !== JSON.stringify(supportedVersions);
+
+          // Use existing lastUpdated if versions haven't changed, otherwise use current time
+          const lastUpdated = versionsChanged ? now.toISOString() : 
+            (existingData?.lastUpdated || now.toISOString());
+
           // Create the output structure
           const output = {
-            lastUpdated: now.toISOString(),
+            lastUpdated: lastUpdated,
             supportedVersions: supportedVersions,
             latestVersion: supportedVersions[supportedVersions.length - 1] || null
           };
@@ -81,6 +99,7 @@ jobs:
 
           console.log('Supported versions:', supportedVersions);
           console.log('Latest version:', output.latestVersion);
+          console.log('Versions changed:', versionsChanged);
           "
 
       - name: Check for changes
