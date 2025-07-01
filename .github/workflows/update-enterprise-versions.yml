@@ -8,7 +8,6 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
 
 jobs:
   update-versions:
@@ -95,57 +94,21 @@ jobs:
             echo "changed=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Create Pull Request
+      - name: Commit changes
         if: steps.check-changes.outputs.changed == 'true'
-        id: create-pr
         run: |
           # Configure git
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           
-          # Create a new branch
-          BRANCH_NAME="update-enterprise-versions-$(date +%Y%m%d-%H%M%S)"
-          git checkout -b "$BRANCH_NAME"
-          
-          # Add and commit changes
+          # Add and commit changes directly to main
           git add data/supported-versions.json
           git commit -m "Update supported enterprise versions"
           
-          # Push the branch
-          git push origin "$BRANCH_NAME"
+          # Push changes to main
+          git push origin main
           
-          # Create pull request using GitHub CLI
-          PR_URL=$(gh pr create \
-            --title "Update supported enterprise versions" \
-            --body "This PR updates the supported GitHub Enterprise Server versions based on the latest release information.
-
-          The workflow automatically:
-          - Fetches the latest enterprise dates from GitHub's docs repository
-          - Determines which versions are currently supported (released but not deprecated)
-          - Updates the data/supported-versions.json file with the current information
-
-          This PR is automatically created and will be auto-merged if all status checks pass." \
-            --head "$BRANCH_NAME" \
-            --base main)
-          
-          # Extract PR number from URL
-          PR_NUMBER=$(echo "$PR_URL" | grep -o '[0-9]\+$')
-          echo "pr-number=$PR_NUMBER" >> $GITHUB_OUTPUT
-          echo "branch-name=$BRANCH_NAME" >> $GITHUB_OUTPUT
-          echo "Created PR #$PR_NUMBER: $PR_URL"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Enable auto-merge
-        if: steps.check-changes.outputs.changed == 'true' && steps.create-pr.outputs.pr-number
-        run: |
-          echo "Enabling auto-merge for PR #${{ steps.create-pr.outputs.pr-number }}"
-          gh pr merge ${{ steps.create-pr.outputs.pr-number }} --auto --squash
-          
-          # Clean up the branch after auto-merge is enabled
-          echo "Auto-merge enabled. Branch ${{ steps.create-pr.outputs.branch-name }} will be deleted automatically after merge."
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          echo "Successfully updated supported enterprise versions on main branch"
 
       - name: Clean up temporary files
         run: |
