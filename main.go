@@ -171,9 +171,10 @@ func main() {
 	// HTTP Request
 	//----------------------------------------------------------------------
 	payload, err := json.Marshal(map[string]string{
-		"query":    query,
-		"version":  version,
-		"language": "en",
+		"query":       query,
+		"version":     version,
+		"language":    "en",
+		"client_name": "gh-ask-docs",
 	})
 	if err != nil {
 		askdocs.Fatal(err)

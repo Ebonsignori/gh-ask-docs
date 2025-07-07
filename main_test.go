@@ -165,9 +165,10 @@ func TestHTTPPayloadCreation(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			payload, err := json.Marshal(map[string]string{
-				"query":    tt.query,
-				"version":  tt.version,
-				"language": "en",
+				"query":       tt.query,
+				"version":     tt.version,
+				"language":    "en",
+				"client_name": "gh-ask-docs",
 			})
 			if err != nil {
 				t.Fatalf("Failed to create payload: %v", err)
@@ -189,6 +190,10 @@ func TestHTTPPayloadCreation(t *testing.T) {
 
 			if parsed["language"] != "en" {
 				t.Errorf("Language = %q, want %q", parsed["language"], "en")
+			}
+
+			if parsed["client_name"] != "gh-ask-docs" {
+				t.Errorf("Client name = %q, want %q", parsed["client_name"], "gh-ask-docs")
 			}
 		})
 	}
@@ -309,9 +314,10 @@ func TestNDJSONResponseParsing(t *testing.T) {
 
 func TestHTTPRequestCreation(t *testing.T) {
 	payload, _ := json.Marshal(map[string]string{
-		"query":    "test query",
-		"version":  "free-pro-team@latest",
-		"language": "en",
+		"query":       "test query",
+		"version":     "free-pro-team@latest",
+		"language":    "en",
+		"client_name": "gh-ask-docs",
 	})
 
 	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewReader(payload))
@@ -429,9 +435,10 @@ func TestMockHTTPServer(t *testing.T) {
 
 	// Test making a request to our mock server
 	payload, _ := json.Marshal(map[string]string{
-		"query":    "What is GitHub?",
-		"version":  "free-pro-team@latest",
-		"language": "en",
+		"query":       "What is GitHub?",
+		"version":     "free-pro-team@latest",
+		"language":    "en",
+		"client_name": "gh-ask-docs",
 	})
 
 	req, _ := http.NewRequest(http.MethodPost, server.URL, bytes.NewReader(payload))
