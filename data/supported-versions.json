@@ -1,11 +1,12 @@
 {
-  "lastUpdated": "2026-06-25T03:05:32.992Z",
+  "lastUpdated": "2026-08-04T03:02:01.519Z",
   "supportedVersions": [
     "3.17",
     "3.18",
     "3.19",
     "3.20",
-    "3.21"
+    "3.21",
+    "3.22"
   ],
-  "latestVersion": "3.21"
+  "latestVersion": "3.22"
 }
